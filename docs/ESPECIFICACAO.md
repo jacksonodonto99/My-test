@@ -1,4 +1,4 @@
-# Agenda Odontológica — Especificação Estrutural (v0.4)
+# Agenda Odontológica — Especificação Estrutural (v0.5)
 
 > Princípio: **o mais simples possível.** É a agenda manuscrita da clínica, em versão digital,
 > sem os problemas do papel. Layout/UX virá depois.
@@ -43,7 +43,8 @@ lado a lado. Nada de setas.
 | Item | Valor |
 |---|---|
 | Dias | Segunda a sábado |
-| Horário | 08:00 às 20:00 |
+| Horário | 08:00 às 20:00 (sábado incluso) |
+| Feriados | A folha mostra "Feriado", mas **não bloqueia**: marca quem quiser |
 | Grade | 30 em 30 minutos |
 | Duração | Escolhida ao marcar (30 min, 1h, 1h30…) |
 | Intervalo entre consultas | Não |
@@ -83,10 +84,11 @@ tela inicial como se fosse um app. Não precisa de loja de aplicativos.
 | Ação | Recepção | Dentista fixo |
 |---|---|---|
 | Ver a folha do dia (todas as salas) | ✅ | ✅ |
-| Marcar consulta | ✅ (para qualquer um) | ✅ |
+| Marcar consulta | ✅ (para qualquer um, inclusive avulsos) | ✅ (para si ou outro fixo) |
 | Alterar/desmarcar consulta que **ele marcou** | ✅ | ✅ |
 | Alterar/desmarcar consulta **dele** (ele é quem atende) | ✅ | ✅ |
 | Alterar/desmarcar consulta de outro dentista, marcada por outra pessoa | ✅ | ❌ (só vê) |
+| Ver procedimento/observação | ✅ | ✅ (todas) |
 | Ver **pagamento** (forma/valor) | ✅ todas | Só das consultas **dele** |
 | Bloquear período (curso, folga) | ✅ | ✅ só o dele |
 | Atualizar status (chegou, em atendimento…) | ✅ | ✅ das dele |
@@ -110,10 +112,22 @@ Só o que hoje se escreve no papel:
 | Sala | ✅ (sugerida) | Sala 1 |
 | Início + duração | ✅ | 16:00, 1h |
 | Procedimento / observação | — | "Restauração 26" |
-| Forma de pagamento | — | Pix / Cartão / Dinheiro |
-| Valor | — | R$ 250,00 |
+| Pagamento | — | ver abaixo |
 
 Não existe cadastro de pacientes, só o nome escrito na consulta.
+
+### Pagamento
+
+Visível **só para a recepção e para o profissional que atende**. Pode ser combinado, em
+várias partes:
+
+| Forma | Valor | Parcelas |
+|---|---|---|
+| Pix (entrada) | R$ 500,00 | — |
+| Cartão de crédito | R$ 2.000,00 | 10x |
+
+Formas: Pix, Dinheiro, Cartão de débito, Cartão de crédito (com nº de parcelas).
+O total é a soma das partes.
 
 ## 8. Status: "quem está onde agora"
 
@@ -156,8 +170,9 @@ usuario       id, nome, email, papel (RECEPCAO|DENTISTA), profissional_id?
 consulta      id, paciente_nome, profissional_id, sala_id, inicio, fim,
               procedimento_obs, status,
               criado_por, atualizado_por, criado_em, atualizado_em
-pagamento     consulta_id, forma (PIX|CARTAO|DINHEIRO), valor
-              (tabela separada, para restringir quem vê)
+pagamento     id, consulta_id, forma (PIX|DINHEIRO|DEBITO|CREDITO), valor, parcelas
+              (várias linhas por consulta; tabela separada para restringir quem vê)
+feriado       data, nome   (nacionais automáticos; recepção pode incluir locais)
 bloqueio      id, profissional_id, inicio, fim, motivo, criado_por
 historico     consulta_id, usuario_id, acao, antes, depois, quando
 ```
@@ -169,8 +184,4 @@ historico     consulta_id, usuario_id, acao, antes, depois, quando
 
 ## 13. Em aberto
 
-1. Procedimento/observação: todos podem ver, ou só o dentista da consulta e a recepção
-   (como o pagamento)?
-2. Cartão: precisa distinguir **débito/crédito/parcelado**? Precisa marcar se **já foi pago**?
-3. Sábado também vai até 20h? Feriados: a clínica fecha?
-4. Um dentista pode marcar paciente **para outro dentista**?
+Nada de estrutural. Próximo passo: banco de dados + primeira versão da folha do dia.
