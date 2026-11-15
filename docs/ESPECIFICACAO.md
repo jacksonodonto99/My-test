@@ -1,4 +1,4 @@
-# Agenda Odontológica — Especificação Estrutural (v0.2)
+# Agenda Odontológica — Especificação Estrutural (v0.3)
 
 > Rascunho de estrutura e regras de negócio. Layout/UX virá depois.
 > Dados de teste usados ao longo do documento.
@@ -26,25 +26,25 @@ Todas são salas odontológicas equivalentes (qualquer procedimento em qualquer 
 
 | Sala | Uso preferencial |
 |---|---|
-| Sala 1 | Dr. Jackson e Dra. Laura |
-| Sala 2 | Dr. Gleuberson e Dra. Laiane |
-| Sala 3 | Rotativa — avulsos e "transbordo" |
+| Sala 1 | Dr. Gleuberson e Dra. Laiane |
+| Sala 2 | Rotativa — avulsos e "transbordo" |
+| Sala 3 | Dr. Jackson e Dra. Laura |
 
 **Sala preferencial não é reserva.** Ela é só a sugestão padrão. A sala só fica ocupada
 quando existe uma consulta nela. Exemplo:
 
-> 14:00 — Dr. Jackson atende na Sala 1, Dr. Gleuberson na Sala 2.
-> Dra. Laura precisa atender às 14:00 → sistema sugere a **Sala 3** (livre).
+> 14:00 — Dr. Jackson atende na Sala 3, Dr. Gleuberson na Sala 1.
+> Dra. Laura precisa atender às 14:00 → Sala 3 ocupada → sistema sugere a **Sala 2** (livre).
 
 ## 4. Profissionais
 
 | Nome | Tipo | Sala preferencial |
 |---|---|---|
-| Dr. Jackson | Fixo | Sala 1 |
-| Dra. Laura | Fixo | Sala 1 |
-| Dr. Gleuberson | Fixo | Sala 2 |
-| Dra. Laiane | Fixo | Sala 2 |
-| (avulsos) | Avulso / rotativo | Sala 3 |
+| Dr. Jackson | Fixo | Sala 3 |
+| Dra. Laura | Fixo | Sala 3 |
+| Dr. Gleuberson | Fixo | Sala 1 |
+| Dra. Laiane | Fixo | Sala 1 |
+| (avulsos) | Avulso / rotativo | Sala 2 |
 
 Avulsos são cadastrados normalmente; podem ser desativados quando não estão mais atendendo.
 
@@ -57,13 +57,16 @@ Dois papéis: **RECEPÇÃO** e **DENTISTA**.
 | Ver agenda completa (todas as salas/profissionais) | ✅ | ✅ |
 | Criar consulta (para qualquer profissional, em sala livre) | ✅ | ✅ |
 | Alterar / remarcar / cancelar consulta **que ele mesmo criou** | ✅ | ✅ |
-| Alterar / remarcar / cancelar consulta **criada por outra pessoa** | ✅ | ❌ |
+| Alterar / remarcar / cancelar consulta **dele mesmo** (é o profissional da consulta) | ✅ | ✅ |
+| Alterar / remarcar / cancelar consulta **de outro profissional, criada por outra pessoa** | ✅ | ❌ |
 | Gerenciar profissionais, salas e usuários | ✅ (ou admin) | ❌ |
 
-Regra resumida: **pode alterar quem criou a consulta, ou a recepção.**
+Regra resumida: **pode alterar quem criou a consulta, o profissional que vai atender,
+ou a recepção.**
 
-Exemplo: Dra. Laura marca um paciente → ela e a recepção podem desmarcar;
-Dr. Jackson só visualiza.
+Exemplos:
+- Dra. Laura marca um paciente dela → Laura e recepção podem alterar; Jackson só visualiza.
+- Recepção marca paciente para o Dr. Jackson → recepção e Jackson podem alterar.
 
 A regra é validada **no servidor/banco**, não só na tela.
 
@@ -82,7 +85,7 @@ podendo: contatar quem marcou, escolher outro horário, ou outra sala livre.
 ## 7. Fluxo de agendamento
 
 ```
-1. Escolhe profissional + paciente + procedimento (duração estimada)
+1. Escolhe profissional + paciente + duração estimada (informada na hora)
 2. Escolhe data/hora
 3. Sistema sugere sala preferencial do profissional
       ├─ livre  → confirma
@@ -99,9 +102,9 @@ sala            id, nome, ativa
 profissional    id, nome, tipo (FIXO|AVULSO), sala_preferencial_id, cor, ativo
 usuario         id, nome, email, papel (RECEPCAO|DENTISTA), profissional_id?
 paciente        id, nome, telefone, observacoes
-procedimento    id, nome, duracao_estimada_min        -- ex.: Avaliação 30, Canal 90
+procedimento    (adiado — por ora a duração é informada pelo profissional)
 consulta        id, paciente_id, profissional_id, sala_id,
-                inicio, fim, procedimento_id?, observacoes,
+                inicio, fim, observacoes,
                 status (AGENDADA|CONFIRMADA|ATENDIDA|FALTOU|CANCELADA),
                 criado_por (usuario_id), atualizado_por, criado_em, atualizado_em
 historico       consulta_id, usuario_id, acao, antes, depois, quando
@@ -113,9 +116,18 @@ historico       consulta_id, usuario_id, acao, antes, depois, quando
 
 ## 9. Calendário
 
-- Visões internas: **Dia por sala** (3 colunas — "quem está onde"), **Dia/Semana por
-  profissional**, **Mês** (visão geral).
-- Vínculo com calendário externo — ver pergunta em aberto (Google Calendar / feed .ics).
+- Calendário **dentro do app**, visão principal **diária**: 3 colunas (Sala 1, 2, 3)
+  × linha do tempo 08–20h. Mostra quem está onde, a qualquer hora.
+- Navegação por data (anterior / hoje / próximo / escolher no calendário).
+- Filtro opcional por profissional ("minha agenda").
+- Sem integração com calendário externo por enquanto.
+
+## 9.1 Acesso
+
+- Web app acessado por um **link** (navegador do celular ou computador), instalável
+  na tela inicial como app (PWA). Nada de loja de aplicativos.
+- **Cada pessoa tem login próprio** — necessário para saber quem marcou e aplicar
+  as permissões.
 
 ## 10. Stack proposta
 
@@ -125,11 +137,13 @@ historico       consulta_id, usuario_id, acao, antes, depois, quando
 
 ## 11. Em aberto
 
-1. **Calendário externo:** sincronizar com Google Calendar de cada dentista
-   (mão dupla ou só envio?) ou um link .ics para assinar no celular (só leitura)?
-2. Se a **recepção** marca para o Dr. Jackson, o próprio Dr. Jackson pode desmarcar
-   esse paciente dele? (Hoje a regra diz que não — só quem criou ou recepção.)
-3. Dentista pode marcar paciente **para outro dentista** (ex.: Jackson marca para Laura)?
-4. Sábado também vai até 20h? Há intervalo de almoço/bloqueios?
-5. Profissional pode **bloquear horário** (folga, curso) sem paciente?
-6. Lista de procedimentos e durações estimadas iniciais.
+1. Dentista pode marcar paciente **para outro dentista**?
+2. Profissional pode **bloquear horário** (folga, curso, almoço) sem paciente?
+3. Sábado também vai até 20h? Feriados fecham?
+4. Contas de usuário: quem cria (recepção/admin)? Auxiliares (ASB) terão acesso?
+5. Avulsos têm login próprio ou a recepção marca por eles?
+6. Intervalo entre consultas para limpeza/esterilização da sala?
+7. Encaixe/urgência: permitir sobreposição para o mesmo profissional?
+8. Status de chegada ("paciente chegou", "em atendimento")?
+9. Cadastro de paciente: quais dados (nome, telefone, CPF?) — LGPD.
+10. Aviso interno quando alguém marca/desmarca paciente seu?
